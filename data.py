@@ -1,15 +1,18 @@
 import os
 import json
 
+from tqdm import tqdm
 from utility.parser import arg_parse
 
 
 def create_apk_info():
+    if not os.path.exists('metadata/config'):
+        os.mkdir('metadata/config')
     if not os.path.exists('metadata/config/apk_info.json'):
         apk_list = {}
-        # apk_list[0] = 'place_holder'
+        print('creating apk_info file....')
         with open(file='metadata/apk_info.csv', mode='r') as apk_fp:
-            for apk_info in apk_fp.readlines():
+            for apk_info in tqdm(apk_fp.readlines()):
                 apk_pair = apk_info.strip('\n').split(',')
                 apk_id = int(apk_pair[0])
                 dot_idx = apk_pair[1].strip('\n').rindex('.')
@@ -22,19 +25,16 @@ def create_apk_info():
 def create_lib_info():
     if not os.path.exists('metadata/config/lib_info.json'):
         lib_list = {}
-        # lib_list.append({'lib_id': 0, 'lib_name': 'place_holder'})
+        print('creating lib_info file...')
         with open(file='metadata/lib_info.csv', mode='r') as lib_fp:
-            for lib_info in lib_fp.readlines():
+            for lib_info in tqdm(lib_fp.readlines()):
                 lib_pair = lib_info.strip('\n').split(',')
                 lib_id = int(lib_pair[0])
                 lib_name = lib_pair[1]
-                # lib_list.append({
-                #     'lib_id': lib_id,
-                #     'lib_name': lib_name
-                # })
                 lib_list[lib_id] = lib_name
         with open(file='metadata/config/lib_info.json', mode='w') as lib_fp:
             json.dump(obj=lib_list, fp=lib_fp)
+
 
 def get_apk_lib_info():
     # 需要创建一个dict，为apk和lib的调用关系
@@ -63,15 +63,15 @@ def get_apk_lib_info():
     return apk_lib_info
 
 
-
-
-
 def create_dict_file():
     # 需要在relation中读到调用关系，并且创建dict和graph文件
     # 这里创建dict文件
     parser = arg_parse()
     apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
     lib_list = json.load(open(file='metadata/config/lib_info.json', mode='r'))
+
+    if not os.path.exists('metadata/dict'):
+        os.mkdir('metadata/dict')
 
     if not os.path.exists('metadata/config/apk_lib_info.json'):
         apk_lib_fp = open(file="metadata/config/apk_lib_info.json", mode='w')
