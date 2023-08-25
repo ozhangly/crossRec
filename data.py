@@ -1,4 +1,5 @@
 import os
+import time
 import json
 
 from tqdm import tqdm
@@ -145,15 +146,15 @@ def create_graph_file():
 
 def create_test_file():
     if not os.path.exists('metadata/config/test_info.json'):
-        apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
+        apk_info = json.load(open(file='metadata/config/apk_info.json', mode='r'))
         test_file_fp = open(file='metadata/config/test_info.json', mode='w')
         test_project_info = {}
         with open(file='metadata/config/testing_0_removed_num_1.json', mode='r') as fp:
             for test_pro in fp.readlines():
                 test_pro = test_pro.strip('\n')
                 test_pro_obj = json.loads(test_pro)
-                test_apk_id  = int(test_pro_obj['app_id'])
-                test_apk_name = apk_list[test_apk_id]['apk_name']
+                test_apk_id  = str(test_pro_obj['app_id'])
+                test_apk_name = apk_info[test_apk_id]
                 test_project_info[test_apk_id] = test_apk_name
 
         json.dump(obj=test_project_info, fp=test_file_fp)
