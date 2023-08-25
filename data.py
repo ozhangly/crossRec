@@ -176,7 +176,24 @@ def create_train_file():
             json.dump(obj=train_info, fp = train_fp)
 
 
+def scan_folder():
+    parser = arg_parse()
+    if not os.path.exists('metadata/config'):
+        os.mkdir('metadata/config')
+    if not os.path.exists(parser.dict_path):
+        os.mkdir(parser.dict_path)
+    if not os.path.exists(parser.graph_path):
+        os.mkdir(parser.graph_path)
+    if not os.path.exists(parser.ground_truth_path):
+        os.mkdir(parser.ground_truth_path)
+    if not os.path.exists(parser.similarities_path):
+        os.mkdir(parser.similarities_path)
+    if not os.path.exists(parser.recommendation_path):
+        os.mkdir(parser.recommendation_path)
+
+
 def create_data():
+    scan_folder()
     create_apk_info()
     create_lib_info()
     create_dict_file()
