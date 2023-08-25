@@ -18,8 +18,7 @@ def cos_similarity():
 
     graph = Graph()
 
-    print('构造train_graph 进度条:', end='')
-    for train_key in tqdm(train_keys):
+    for train_key in train_keys:
         train_project = train_projects[train_key]
         train_graph_file_name = 'graph__' + train_project + '.txt'
         train_dict_file_name  = 'dict__' + train_project + '.txt'
@@ -35,8 +34,10 @@ def cos_similarity():
 
     lib_weight = dict()
 
-    print('test计算相似度进度', end='')
-    for test_key in tqdm(test_keys):          # test_key: str
+    sim_prog_bar = tqdm(desc='similarity computation progress',
+                        leave=True,
+                        total=len(test_keys))
+    for test_key in test_keys:          # test_key: str
         all_libs = set()
         all_libs = all_libs | all_train_libs
         combined_graph = Graph(graph=graph)
@@ -109,6 +110,9 @@ def cos_similarity():
             for key, val in sorted_sim:
                 content = test_pro + '\t' + train_projects[key] + '\t' + str(val) + '\n'
                 fp.write(content)
+        sim_prog_bar.update()
+    sim_prog_bar.close()
+    print('similarity calculation complete')
 
 
 def compute_cos_similarity(vector1, vector2):

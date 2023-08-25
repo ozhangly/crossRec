@@ -17,6 +17,10 @@ class Recommendation:
         test_projects = read_test_project('metadata/config/test_info.json')
         test_keys = test_projects.keys()
 
+        recom_prog_bar = tqdm(desc='recommend progress',
+                              leave=True,
+                              total=len(test_keys))
+
         for test_key in tqdm(test_keys):
             recommendation = dict()
             test_pro = test_projects[test_key]
@@ -49,6 +53,9 @@ class Recommendation:
                 for key, val in recommendation_result:
                     content = lib_set[key] + '\t' + str(val) + '\n'
                     fp.write(content)
+            recom_prog_bar.update()
+        recom_prog_bar.close()
+        print('recommend complete')
 
     def build_user_item_matrix(self, file_name, lib_set):
 
