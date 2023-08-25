@@ -59,7 +59,9 @@ def get_apk_lib_info():
                 apk_lib_info[apk_id] = apk_lib_list
             else:
                 apk_lib_info[apk_id].append(lib_id)
-
+        # 到这结束，apk_lib_list中都是train的info，还需要再把test_dict的内容放到apk_lib_info_dict中
+        for test_apk_id, libs in test_apk_lib_info.items():
+            apk_lib_info[test_apk_id] = libs
     return apk_lib_info
 
 
@@ -82,8 +84,13 @@ def create_dict_file():
         with open(file='metadata/config/apk_lib_info.json', mode='r') as fp:
             apk_lib_dict = json.load(fp)
 
+    prog_bar = tqdm(desc='creating dict file....',
+                    leave=True,
+                    total=len(apk_lib_dict))
+
     # 循环对所有的apk创建数据
     for apk_id, apk_lib_list in apk_lib_dict.items():
+        prog_bar.update()
         apk_name = apk_list[apk_id]
         dict_file_name = 'dict__' + apk_name + '.txt'
         dict_file_fp = open(file=parser.dict_path + dict_file_name, mode='w')
@@ -97,12 +104,16 @@ def create_dict_file():
             write_name = str(write_id) + '\t#DEP#' + lib_name + '\n'
             dict_file_fp.write(write_name)
         dict_file_fp.close()
-
+    print('create dict file complete')
+    prog_bar.close()
 
 
 
 def create_graph_file():
     apk_list = json.load(fp=open(file='metadata/config/apk_info.json', mode='r'))
+
+    if not os.path.exists('metadata/graph'):
+        os.mkdir('metadata/graph')
 
     if not os.path.exists('metadata/config/apk_lib_info.json'):
         w_l_fp = open(file='metadata/config/apk_lib_info.json', mode='w')
@@ -113,7 +124,11 @@ def create_graph_file():
         with open(file='metadata/config/apk_lib_info.json', mode='r') as al_fp:
             apk_lib_dict = json.load(fp=al_fp)
 
+    prog_bar = tqdm(desc='creating graph file....',
+                    leave=True,
+                    total=len(apk_lib_dict))
     for apk_id, apk_lib_list in apk_lib_dict.items():
+        prog_bar.update()
         apk_name = apk_list[apk_id]
         graph_file_name = 'graph__' + apk_name + '.txt'
         graph_file_fp = open(file='metadata/graph/' + graph_file_name, mode='w')
@@ -122,39 +137,43 @@ def create_graph_file():
             content = str(1) + '#' + str(w_l) + '\n'
             graph_file_fp.write(content)
         graph_file_fp.close()
+    print('creat graph file complete')
+    prog_bar.close()
 
 
 
 
 def create_test_file():
-    apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
-    test_file_fp = open(file='metadata/config/test_info.json', mode='w')
-    test_project_info = {}
-    with open(file='metadata/config/testing_0_removed_num_1.json', mode='r') as fp:
-        for test_pro in fp.readlines():
-            test_pro = test_pro.strip('\n')
-            test_pro_obj = json.loads(test_pro)
-            test_apk_id  = int(test_pro_obj['app_id'])
-            test_apk_name = apk_list[test_apk_id]['apk_name']
-            test_project_info[test_apk_id] = test_apk_name
+    if not os.path.exists('metadata/config/test_info.json'):
+        apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
+        test_file_fp = open(file='metadata/config/test_info.json', mode='w')
+        test_project_info = {}
+        with open(file='metadata/config/testing_0_removed_num_1.json', mode='r') as fp:
+            for test_pro in fp.readlines():
+                test_pro = test_pro.strip('\n')
+                test_pro_obj = json.loads(test_pro)
+                test_apk_id  = int(test_pro_obj['app_id'])
+                test_apk_name = apk_list[test_apk_id]['apk_name']
+                test_project_info[test_apk_id] = test_apk_name
 
-    json.dump(obj=test_project_info, fp=test_file_fp)
-    test_file_fp.close()
+        json.dump(obj=test_project_info, fp=test_file_fp)
+        test_file_fp.close()
 
 
 
 
 def create_train_file():
-    apk_info = json.load(open(file='metadata/config/apk_info.json', mode='r'))
-    test_info = json.load(open(file='metadata/config/test_info.json', mode='r'))
-    train_info = dict()
-    
-    for apk_id, apk_name in apk_info.items():
-        if apk_id not in test_info.keys():
-            train_info[apk_id] = apk_name
+    if not os.path.exists('metadata/config/train_info.json'):
+        apk_info = json.load(open(file='metadata/config/apk_info.json', mode='r'))
+        test_info = json.load(open(file='metadata/config/test_info.json', mode='r'))
+        train_info = dict()
 
-    with open(file='metadata/config/train_info.json', mode='w') as train_fp:
-        json.dump(obj=train_info, fp = train_fp)
+        for apk_id, apk_name in apk_info.items():
+            if apk_id not in test_info.keys():
+                train_info[apk_id] = apk_name
+
+        with open(file='metadata/config/train_info.json', mode='w') as train_fp:
+            json.dump(obj=train_info, fp = train_fp)
 
 
 def create_data():
