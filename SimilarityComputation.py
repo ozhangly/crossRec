@@ -38,12 +38,10 @@ def cos_similarity():
     sim = dict()            # sim: key:int, val:double
     lib_weight = dict()
 
-    all_libs = all_libs | all_train_libs
-
     print('test计算相似度进度', end='')
     for test_key in tqdm(test_keys):          # test_key: str
-        # all_libs.union(all_train_libs)
-        # all_libs = all_libs | all_train_libs
+        all_libs = set()
+        all_libs = all_libs | all_train_libs
         combined_graph = Graph(graph=graph)
         test_pro = test_projects[test_key]
         dict_test_pro_file_name = 'dict__' + test_pro + '.txt'
