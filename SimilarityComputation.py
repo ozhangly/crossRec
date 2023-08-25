@@ -14,14 +14,12 @@ def cos_similarity():
     train_keys = train_projects.keys()   # set<str>
     test_keys = test_projects.keys()     # set<str>
 
-    all_libs = set()
     all_train_libs = set()
 
     graph = Graph()
 
     print('构造train_graph 进度条:', end='')
     for train_key in tqdm(train_keys):
-        # train_key = int(train_key)
         train_project = train_projects[train_key]
         train_graph_file_name = 'graph__' + train_project + '.txt'
         train_dict_file_name  = 'dict__' + train_project + '.txt'
@@ -35,7 +33,6 @@ def cos_similarity():
 
         graph.combine(train_graph, train_dictionary)
 
-    sim = dict()            # sim: key:int, val:double
     lib_weight = dict()
 
     print('test计算相似度进度', end='')
@@ -43,12 +40,14 @@ def cos_similarity():
         all_libs = set()
         all_libs = all_libs | all_train_libs
         combined_graph = Graph(graph=graph)
+        sim = dict()            # sim: key: int, val: double
+
         test_pro = test_projects[test_key]
         dict_test_pro_file_name = 'dict__' + test_pro + '.txt'
         graph_test_pro_file_name = 'graph__' + test_pro + '.txt'
         # 拿第test_pro的一半的lib
         test_libs = get_half_libraries(parser.dict_path + dict_test_pro_file_name)
-        # all_libs.union(test_libs)
+
         all_libs = all_libs | test_libs
         
         test_dictionary = extract_half_dictionary(dict_test_pro_file_name, parser.ground_truth_path, parser) # test_dictionary: key:int val:str
