@@ -18,6 +18,10 @@ def cos_similarity():
 
     graph = Graph()
 
+    train_graph_prog_bar = tqdm(desc='generating train call graph:',
+                                leave=True,
+                                total=len(train_keys))
+
     for train_key in train_keys:
         train_project = train_projects[train_key]
         train_graph_file_name = 'graph__' + train_project + '.txt'
@@ -31,6 +35,9 @@ def cos_similarity():
         train_graph = Graph(train_graph_file_name=parser.graph_path + train_graph_file_name, train_dictionary=train_dictionary)
 
         graph.combine(train_graph, train_dictionary)
+        train_graph_prog_bar.update()
+    train_graph_prog_bar.close()
+    print('train call graph generated finish')
 
     lib_weight = dict()
 

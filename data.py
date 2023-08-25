@@ -73,9 +73,6 @@ def create_dict_file():
     apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
     lib_list = json.load(open(file='metadata/config/lib_info.json', mode='r'))
 
-    if not os.path.exists('metadata/dict'):
-        os.mkdir('metadata/dict')
-
     if not os.path.exists('metadata/config/apk_lib_info.json'):
         apk_lib_fp = open(file="metadata/config/apk_lib_info.json", mode='w')
         apk_lib_dict = get_apk_lib_info()
@@ -106,15 +103,12 @@ def create_dict_file():
             dict_file_fp.write(write_name)
         dict_file_fp.close()
     prog_bar.close()
-    print('create dict file complete')
+    print('create dict file finish')
 
 
 
 def create_graph_file():
     apk_list = json.load(fp=open(file='metadata/config/apk_info.json', mode='r'))
-
-    if not os.path.exists('metadata/graph'):
-        os.mkdir('metadata/graph')
 
     if not os.path.exists('metadata/config/apk_lib_info.json'):
         w_l_fp = open(file='metadata/config/apk_lib_info.json', mode='w')
@@ -139,7 +133,7 @@ def create_graph_file():
             graph_file_fp.write(content)
         graph_file_fp.close()
     prog_bar.close()
-    print('creat graph file complete')
+    print('creat graph file finish')
 
 
 
