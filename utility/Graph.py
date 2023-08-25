@@ -56,7 +56,6 @@ class Graph:
 
     def combine(self, graph, dictionary):
         tmp_out_links = graph.getoutlinks()
-        main_out_links = set()
         key = tmp_out_links.keys()
 
         for start_node in key:

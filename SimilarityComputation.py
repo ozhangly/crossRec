@@ -29,7 +29,7 @@ def cos_similarity():
 
         train_dictionary = get_dictionary(parser.dict_path + train_dict_file_name) # train_dictionary: key:int, val:str
 
-        train_graph = Graph(parser.graph_path + train_graph_file_name, train_dictionary)
+        train_graph = Graph(train_graph_file_name=parser.graph_path + train_graph_file_name, train_dictionary=train_dictionary)
 
         graph.combine(train_graph, train_dictionary)
 
@@ -50,9 +50,9 @@ def cos_similarity():
 
         all_libs = all_libs | test_libs
         
-        test_dictionary = extract_half_dictionary(dict_test_pro_file_name, parser.ground_truth_path, parser) # test_dictionary: key:int val:str
+        test_dictionary = extract_half_dictionary(dict_test_pro_file_name, parser.ground_truth_path, parser)    # test_dictionary: key:int val:str
 
-        test_graph = Graph(parser.graph_path + graph_test_pro_file_name, test_dictionary)
+        test_graph = Graph(train_graph_file_name=parser.graph_path + graph_test_pro_file_name, train_dictionary=test_dictionary)
         combined_graph.combine(test_graph, test_dictionary)
         combined_dictionary = combined_graph.get_dictionary()
 
