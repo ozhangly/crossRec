@@ -105,8 +105,8 @@ def create_dict_file():
             write_name = str(write_id) + '\t#DEP#' + lib_name + '\n'
             dict_file_fp.write(write_name)
         dict_file_fp.close()
-    print('create dict file complete')
     prog_bar.close()
+    print('create dict file complete')
 
 
 
@@ -138,9 +138,8 @@ def create_graph_file():
             content = str(1) + '#' + str(w_l) + '\n'
             graph_file_fp.write(content)
         graph_file_fp.close()
-    print('creat graph file complete')
     prog_bar.close()
-
+    print('creat graph file complete')
 
 
 
