@@ -111,6 +111,7 @@ def cos_similarity():
                 content = test_pro + '\t' + train_projects[key] + '\t' + str(val) + '\n'
                 fp.write(content)
         sim_prog_bar.update()
+
     sim_prog_bar.close()
     print('similarity calculation complete')
 

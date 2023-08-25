@@ -54,6 +54,7 @@ class Recommendation:
                     content = lib_set[key] + '\t' + str(val) + '\n'
                     fp.write(content)
             recom_prog_bar.update()
+
         recom_prog_bar.close()
         print('recommend complete')
 
