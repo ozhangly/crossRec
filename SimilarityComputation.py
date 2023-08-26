@@ -120,7 +120,7 @@ def cos_similarity():
         sim_prog_bar.update()
 
     sim_prog_bar.close()
-    print('similarity calculation complete')
+    print('similarity calculation finish')
 
 
 def compute_cos_similarity(vector1, vector2):
