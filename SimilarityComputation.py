@@ -6,33 +6,35 @@ from utility.DataReader import *
 from utility.parser import arg_parse
 
 
-def cos_similarity():
+def cos_similarity(train_dataset):
     parser = arg_parse()
-    train_projects = read_train_project(file_name='metadata/config/train_info.json') # key: str, val: str
-    test_projects  = read_test_project(file_name='metadata/config/test_info.json') # key: str, val: str
+    train_projects = read_train_project(file_name=train_dataset + '/train_info.json')  # key: str, val: str
+    test_projects = read_test_project(file_name=train_dataset + '/test_info.json')  # key: str, val: str
 
-    train_keys = train_projects.keys()   # set<str>
-    test_keys = test_projects.keys()     # set<str>
+    train_keys = train_projects.keys()  # set<str>
+    test_keys = test_projects.keys()  # set<str>
 
     all_train_libs = set()
 
     graph = Graph()
 
-    train_graph_prog_bar = tqdm(desc='generating train call graph:',
+    train_graph_prog_bar = tqdm(desc='generating train call graph',
                                 leave=True,
                                 total=len(train_keys))
 
     for train_key in train_keys:
         train_project = train_projects[train_key]
         train_graph_file_name = 'graph__' + train_project + '.txt'
-        train_dict_file_name  = 'dict__' + train_project + '.txt'
+        train_dict_file_name = 'dict__' + train_project + '.txt'
 
-        train_libs = get_libraries(parser.dict_path + train_dict_file_name)
+        train_libs = get_libraries(train_dataset + '/' + parser.dict_path + '/' + train_dict_file_name)
         all_train_libs = all_train_libs | train_libs
 
-        train_dictionary = get_dictionary(parser.dict_path + train_dict_file_name) # train_dictionary: key:int, val:str
+        train_dictionary = get_dictionary(
+            train_dataset + '/' + parser.dict_path + '/' + train_dict_file_name)  # train_dictionary: key:int, val:str
 
-        train_graph = Graph(train_graph_file_name=parser.graph_path + train_graph_file_name, train_dictionary=train_dictionary)
+        train_graph = Graph(train_graph_file_name=train_dataset + '/' + parser.graph_path + '/' + train_graph_file_name,
+                            train_dictionary=train_dictionary)
 
         graph.combine(train_graph, train_dictionary)
         train_graph_prog_bar.update()
@@ -44,23 +46,33 @@ def cos_similarity():
     sim_prog_bar = tqdm(desc='similarity computation progress',
                         leave=True,
                         total=len(test_keys))
-    for test_key in test_keys:          # test_key: str
+    for test_key in test_keys:  # test_key: str
         all_libs = set()
         all_libs = all_libs | all_train_libs
         combined_graph = Graph(graph=graph)
-        sim = dict()            # sim: key: int, val: double
+        sim = dict()  # sim: key: int, val: double
 
         test_pro = test_projects[test_key]
         dict_test_pro_file_name = 'dict__' + test_pro + '.txt'
         graph_test_pro_file_name = 'graph__' + test_pro + '.txt'
-        # 拿第test_pro的一半的lib
-        test_libs = get_half_libraries(parser.dict_path + dict_test_pro_file_name)
+
+        # test_libs-> 剩下的lib，就是dict中所有的library
+        test_libs = get_train_libraries(train_dataset + '/' + parser.dict_path + '/' + dict_test_pro_file_name)
 
         all_libs = all_libs | test_libs
-        
-        test_dictionary = extract_half_dictionary(dict_test_pro_file_name, parser.ground_truth_path, parser)    # test_dictionary: key:int val:str
 
-        test_graph = Graph(train_graph_file_name=parser.graph_path + graph_test_pro_file_name, train_dictionary=test_dictionary)
+        # ************************************************************************
+        # 这里将移除的lib放到recommendation文件夹中，所以需要拿到移除的lib_id
+        test_dictionary = extract_train_dictionary(dict_test_pro_file_name,
+                                                   test_key,
+                                                   parser,
+                                                   train_dataset)  # test_dictionary: key:int val:str
+        # *************************************************************************
+
+        test_graph = Graph(
+            train_graph_file_name=train_dataset + '/' + parser.graph_path + '/' + graph_test_pro_file_name,
+            train_dictionary=test_dictionary)
+
         combined_graph.combine(test_graph, test_dictionary)
         combined_dictionary = combined_graph.get_dictionary()
 
@@ -75,19 +87,19 @@ def cos_similarity():
                     freq = lib_weight[end_node] + 1.0
                 else:
                     freq = 1.0
-                lib_weight[end_node] = freq         # lib_weight: key: int, val: double
+                lib_weight[end_node] = freq  # lib_weight: key: int, val: double
 
         # 在图中所有的项目的project
         num_project = len(graph_key_set)
         for lib_id in lib_weight.keys():
             freq = lib_weight[lib_id]
-            weight = num_project/freq
+            weight = num_project / freq
             idf = math.log(weight)
             lib_weight[lib_id] = idf
 
         for train_key in train_keys:
             train_project = train_projects[train_key]
-            train_libs = get_libraries(parser.dict_path + 'dict__' + train_project + '.txt')
+            train_libs = get_libraries(train_dataset + '/' + parser.dict_path + '/dict__' + train_project + '.txt')
             # train_libs.union(test_libs)
             train_libs = train_libs | test_libs
             lib_set = []
@@ -113,7 +125,7 @@ def cos_similarity():
             sim[train_key] = val
 
         sorted_sim = sorted(sim.items(), key=lambda d: d[1], reverse=True)
-        with open(file=parser.similarities_path + test_pro + '.txt', mode='w') as fp:
+        with open(file=train_dataset + '/' + parser.similarities_path + '/' + test_pro + '.txt', mode='w') as fp:
             for key, val in sorted_sim:
                 content = test_pro + '\t' + train_projects[key] + '\t' + str(val) + '\n'
                 fp.write(content)
@@ -131,8 +143,4 @@ def compute_cos_similarity(vector1, vector2):
         norm1 += (vector1[i] * vector1[i])
         norm2 += (vector2[i] * vector2[i])
 
-    return scalar/math.sqrt(norm1*norm2)
-
-
-if __name__ == '__main__':
-    cos_similarity()
+    return scalar / math.sqrt(norm1 * norm2)
