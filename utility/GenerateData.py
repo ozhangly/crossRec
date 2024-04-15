@@ -1,6 +1,7 @@
 import os
 import json
 
+from time import time
 from tqdm import tqdm
 from utility.parser import arg_parse
 
@@ -8,35 +9,38 @@ args = arg_parse()
 
 
 def create_apk_info():
-    if not os.path.exists('metadata/config'):
-        os.mkdir('metadata/config')
-    if not os.path.exists('metadata/config/apk_info.json'):
+    if not os.path.exists(args.config_path):
+        os.mkdir(args.config_path)
+    if not os.path.exists(args.config_path + '/apk_info.json'):
         apk_list = {}
-        with open(file='metadata/apk_info.csv', mode='r') as apk_fp:
+        with open(file=args.config_path + '/apk_info.csv', mode='r') as apk_fp:
             for apk_info in apk_fp.readlines():
                 apk_pair = apk_info.strip('\n').split(',')
                 apk_id = int(apk_pair[0])
                 dot_idx = apk_pair[1].strip('\n').rindex('.')
                 apk_name = apk_pair[1][:dot_idx]
                 apk_list[apk_id] = apk_name
-        with open(file='metadata/config/apk_info.json', mode='w') as apk_fp:
+        with open(file=args.config_path + '/apk_info.json', mode='w') as apk_fp:
             json.dump(apk_list, fp=apk_fp)
 
 
 def create_lib_info():
-    if not os.path.exists('metadata/config/lib_info.json'):
+    if not os.path.exists(args.config_path + '/lib_info.json'):
         lib_list = {}
-        with open(file='metadata/lib_info.csv', mode='r') as lib_fp:
+        with open(file=args.config_path + '/lib_info.csv', mode='r') as lib_fp:
             for lib_info in lib_fp.readlines():
                 lib_pair = lib_info.strip('\n').split(',')
                 lib_id = int(lib_pair[0])
                 lib_name = lib_pair[1]
                 lib_list[lib_id] = lib_name
-        with open(file='metadata/config/lib_info.json', mode='w') as lib_fp:
+        with open(file=args.config_path + '/lib_info.json', mode='w') as lib_fp:
             json.dump(obj=lib_list, fp=lib_fp)
 
 
 def get_apk_lib_info(train_dataset):
+    print('creating apk_lib info.....')
+    # 记录一下创建apk_lib的时间
+    start_time = time()
     # 需要创建一个dict，为apk和lib的调用关系
     apk_lib_info = {}
     test_apk_lib_info = {}
@@ -61,17 +65,18 @@ def get_apk_lib_info(train_dataset):
             tpl_list = [int(tpl) for tpl in line.split(',')[1:]]
             apk_lib_info[app_id] = tpl_list
 
-    # 到这结束，apk_lib_list中都是train的info，还需要再把test_dict的内容放到apk_lib_info_dict中
+    # 到这结束，apk_lib_info中都是train的info，还需要再把test_dict的内容放到apk_lib_info_dict中
     for test_apk_id, libs in test_apk_lib_info.items():
         apk_lib_info[test_apk_id] = libs
+    res_s = 'apk_lib_info created finish.     [%.4fs]' % (time() - start_time)
+    print(res_s)
     return apk_lib_info
 
 
 def create_dict_file(train_dataset):
     # 这里创建dict文件
-    parser = arg_parse()
-    apk_list = json.load(open(file='metadata/config/apk_info.json', mode='r'))
-    lib_list = json.load(open(file='metadata/config/lib_info.json', mode='r'))
+    apk_list = json.load(open(file=args.config_path + '/apk_info.json', mode='r'))
+    lib_list = json.load(open(file=args.config_path + '/lib_info.json', mode='r'))
 
     if not os.path.exists(train_dataset + '/apk_lib_info.json'):
         apk_lib_fp = open(file=train_dataset + "/apk_lib_info.json", mode='w')
@@ -82,25 +87,29 @@ def create_dict_file(train_dataset):
         with open(file=train_dataset + '/apk_lib_info.json', mode='r') as fp:
             apk_lib_dict = json.load(fp)
 
-    # 循环对所有的apk创建数据
-    for apk_id, apk_lib_list in apk_lib_dict.items():
-        apk_name = apk_list[apk_id]
-        dict_file_name = 'dict__' + apk_name + '.txt'
-        dict_file_fp = open(file=train_dataset + '/' + parser.dict_path + '/' + dict_file_name, mode='w')
-        write_id = 1
-        write_name = str(write_id) + '\t' + apk_name + '\n'
-        dict_file_fp.write(write_name)
-
-        for lib_id in apk_lib_list:
-            write_id += 1
-            lib_name = lib_list[str(lib_id)]
-            write_name = str(write_id) + '\t#DEP#' + lib_name + '\n'
+    if len(os.listdir(train_dataset + '/' + args.dict_path)) == 0:
+        dict_process_bar = tqdm(desc='creating dict file....', total=len(apk_lib_dict), leave=True)
+        # 循环对所有的apk创建数据
+        for apk_id, apk_lib_list in apk_lib_dict.items():
+            apk_name = apk_list[str(apk_id)]
+            dict_file_name = 'dict__' + apk_name + '.txt'
+            dict_file_fp = open(file=train_dataset + '/' + args.dict_path + '/' + dict_file_name, mode='w')
+            write_id = 1
+            write_name = str(write_id) + '\t' + apk_name + '\n'
             dict_file_fp.write(write_name)
-        dict_file_fp.close()
+
+            for lib_id in apk_lib_list:
+                write_id += 1
+                lib_name = lib_list[str(lib_id)]
+                write_name = str(write_id) + '\t#DEP#' + lib_name + '\n'
+                dict_file_fp.write(write_name)
+            dict_process_bar.update()
+            dict_file_fp.close()
+        dict_process_bar.close()
 
 
 def create_graph_file(train_dataset):
-    apk_list = json.load(fp=open(file='metadata/config/apk_info.json', mode='r'))
+    apk_list = json.load(fp=open(file=args.config_path + '/apk_info.json', mode='r'))
 
     if not os.path.exists(train_dataset + '/apk_lib_info.json'):
         w_l_fp = open(file=train_dataset + '/apk_lib_info.json', mode='w')
@@ -111,20 +120,27 @@ def create_graph_file(train_dataset):
         with open(file=train_dataset + '/apk_lib_info.json', mode='r') as al_fp:
             apk_lib_dict = json.load(fp=al_fp)
 
-    for apk_id, apk_lib_list in apk_lib_dict.items():
-        apk_name = apk_list[apk_id]
-        graph_file_name = 'graph__' + apk_name + '.txt'
-        graph_file_fp = open(file=train_dataset + '/' + args.graph_path + '/' + graph_file_name, mode='w')
-        write_lib = [i+2 for i in range(len(apk_lib_list))]
-        for w_l in write_lib:
-            content = str(1) + '#' + str(w_l) + '\n'
-            graph_file_fp.write(content)
-        graph_file_fp.close()
+    if len(os.listdir(train_dataset + '/' + args.graph_path)) == 0:
+        graph_process_bar = tqdm(desc='create graph file....', total=len(apk_lib_dict), leave=True)
+
+        for apk_id, apk_lib_list in apk_lib_dict.items():
+            apk_name = apk_list[apk_id]
+            graph_file_name = 'graph__' + apk_name + '.txt'
+            graph_file_fp = open(file=train_dataset + '/' + args.graph_path + '/' + graph_file_name, mode='w')
+            write_lib = [i+2 for i in range(len(apk_lib_list))]
+            for w_l in write_lib:
+                content = str(1) + '#' + str(w_l) + '\n'
+                graph_file_fp.write(content)
+            graph_process_bar.update()
+            graph_file_fp.close()
+        graph_process_bar.close()
 
 
 def create_test_file(train_dataset):
+    print('creating test file...')
+    start_time = time()
     if not os.path.exists(train_dataset + '/test_info.json'):
-        apk_info = json.load(open(file='metadata/config/apk_info.json', mode='r'))
+        apk_info = json.load(open(file=args.config_path + '/apk_info.json', mode='r'))
         test_file_fp = open(file=train_dataset + '/test_info.json', mode='w')
         test_project_info = {}
         # 我需要拿到testing测试的json文件
@@ -143,26 +159,39 @@ def create_test_file(train_dataset):
 
         json.dump(obj=test_project_info, fp=test_file_fp)
         test_file_fp.close()
+    res_s = 'test_file created finish.    [%.4fs]' % (time() - start_time)
+    print(res_s)
 
 
 def create_train_file(train_dataset):
+    # 按道理来说，这样创建train_file是不正确的, 重新创建一下
+    # 就算apk_lib_info 那里没问题，但是在这里根据apk_lib_info创建train是绝对有问题的
+    print('creating train file...')
+    start_time = time()
     if not os.path.exists(train_dataset + '/train_info.json'):
-        apk_info = json.load(open(file='metadata/config/apk_info.json', mode='r'))
-        test_info = json.load(open(file=train_dataset + '/test_info.json', mode='r'))
-        train_info = dict()
+        train_apk_lib_fp = open(file='%s/train_%s.csv' % (train_dataset, args.dataset), mode='r')
+        apk_info_fp = open(file=args.config_path + '/apk_info.json', mode='r')
 
-        for apk_id, apk_name in apk_info.items():
-            if apk_id not in test_info.keys():
+        apk_info = json.load(apk_info_fp)
+        train_info = {}
+        with open(file=train_dataset + '/train_info.json', mode='w') as fp:
+            for l in train_apk_lib_fp.readlines():
+                l = l.strip('\n').split(',')
+                apk_id = l[0]
+                apk_name = apk_info[str(apk_id)]
                 train_info[apk_id] = apk_name
+            json.dump(obj=train_info, fp=fp)
 
-        with open(file=train_dataset + '/train_info.json', mode='w') as train_fp:
-            json.dump(obj=train_info, fp=train_fp)
+        train_apk_lib_fp.close()
+        apk_info_fp.close()
+    res_s = 'created train file finish     [%.4fs]' % (time() - start_time)
+    print(res_s)
 
 
 def scan_folder(train_dataset):
     base_path = train_dataset + '/'
-    if not os.path.exists('metadata/config'):
-        os.mkdir('metadata/config')
+    if not os.path.exists(args.config_path):
+        os.mkdir(args.config_path)
     if not os.path.exists(base_path + args.dict_path):
         os.mkdir(base_path + args.dict_path)
     if not os.path.exists(base_path + args.graph_path):
@@ -179,8 +208,8 @@ def create_data(train_dataset):
     scan_folder(train_dataset)
     create_apk_info()
     create_lib_info()
+    # 需要在以下步骤中加上进度条
     create_dict_file(train_dataset)          # 这个就要求在数据集中创建了
     create_graph_file(train_dataset)
     create_test_file(train_dataset)
     create_train_file(train_dataset)
-
