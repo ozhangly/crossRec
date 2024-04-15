@@ -1,3 +1,5 @@
+import os
+
 from utility.DataReader import *
 from utility.parser import *
 
@@ -12,24 +14,25 @@ class Recommendation:
         self.num_neighbours = self.parser.numofneighbours
         self.recommend_top_n = self.parser.recommend_top_n
 
-    def user_based_recommendation(self):
+    def user_based_recommendation(self, train_dataset):
 
-        test_projects = read_test_project('metadata/config/test_info.json')
+        test_projects = read_test_project(train_dataset + '/test_info.json')
         test_keys = test_projects.keys()
 
         recom_prog_bar = tqdm(desc='recommend progress',
                               leave=True,
                               total=len(test_keys))
 
-        for test_key in tqdm(test_keys):
+        for test_key in test_keys:
             recommendation = dict()
             test_pro = test_projects[test_key]
             lib_set = []
             val1 = 0.0
-            # similarities: dict() key: int, val: double
             # 需要把这里改一下
-            user_item_matrix = self.build_user_item_matrix(test_pro, lib_set)
-            similarities = get_similarity_matrix(self.parser.similarities_path + test_pro + '.txt', self.num_neighbours)
+            user_item_matrix = self.build_user_item_matrix(train_dataset, test_pro, lib_set)
+            similarities = get_similarity_matrix(train_dataset + '/' + self.parser.similarities_path + '/' + test_pro + '.txt',
+                                                 self.num_neighbours)
+
             for i in range(self.num_neighbours):
                 val1 += similarities[i]
             N = self.num_cols
@@ -49,7 +52,7 @@ class Recommendation:
                     recommendation[i] = (avg_rating + val2/val1)
 
             recommendation_result = sorted(recommendation.items(), key=lambda b: b[1], reverse=True)[:10]
-            with open(file=self.parser.recommendation_path + test_pro + '.txt', mode='w') as fp:
+            with open(file=train_dataset + '/' + self.parser.recommendation_path + '/' + test_pro + '.txt', mode='w') as fp:
                 for key, val in recommendation_result:
                     content = lib_set[key] + '\t' + str(val) + '\n'
                     fp.write(content)
@@ -58,21 +61,24 @@ class Recommendation:
         recom_prog_bar.close()
         print('recommend complete')
 
-    def build_user_item_matrix(self, file_name, lib_set):
+    def build_user_item_matrix(self, train_dataset, file_name, lib_set):
 
         # positive libs
-        test_libs = get_half_libraries(self.parser.dict_path + 'dict__' + file_name + '.txt')
+        test_libs = get_train_libraries(train_dataset + '/' + self.parser.dict_path + '/dict__' + file_name + '.txt')
 
         # sim_projects: dict: key:int, val:str
         # all_neighbours: dict: key: int, val: list
         # libraries: set
-        sim_projects, all_neighbours, libraries = get_similarity_projects(self.parser.similarities_path + file_name + '.txt', self.recommend_top_n, self.parser)
+        # sim_projects, all_neighbours, libraries = get_similarity_projects(train_dataset + '/' + self.parser.similarities_path+ '/' + file_name + '.txt',
+        #                                                                   self.recommend_top_n, self.parser)
+        # 因为不能确定返回的一定就是num of neighbours的project的lib，所以这个很难加进去
+        sim_projects, all_neighbours, libraries = get_similarity_projects(train_dataset, file_name, self.parser)
 
         self.num_neighbours = len(sim_projects)
         self.parser.numofneighbours = self.num_neighbours
 
         all_neighbours[self.num_neighbours] = test_libs
-        # libraries = libraries | test_libs
+        libraries = libraries | test_libs
 
         for lib in libraries:
             lib_set.append(lib)
@@ -106,4 +112,4 @@ class Recommendation:
 
 if __name__ == '__main__':
     r_e = Recommendation()
-    r_e.user_based_recommendation()
+    r_e.user_based_recommendation('./training dataset/' + r_e.parser.dataset)
