@@ -1,59 +1,88 @@
+import os
 import json
-from utility.parser import arg_parse
+
 from tqdm import tqdm
+from utility.metrics import *
+from utility.parser import arg_parse
+from typing import Sequence, Dict
+from utility.DataReader import create_libname2id, create_apk_name2id, get_test_apk_info
 
-parser = arg_parse()
-
-def create_libname2id():
-    id2lib_name = json.load(fp=open(file='metadata/config/lib_info.json', mode='r'))
-    lib_name2id = dict()
-
-    for id, name in id2lib_name.items():
-        id = int(id)
-        lib_name2id[name] = id
-
-    return lib_name2id
+args = arg_parse()
 
 
-def create_apk_name2id():
-    id2apk_name = json.load(fp=open(file='metadata/config/test_info.json', mode='r'))
-    apk_name2id = dict()
+def test_one_app(recommend_list: Sequence[int], pos_list: Sequence[int], k_max: Sequence[int]) -> Dict:
+    precision_list, mrr_list, recall_list, map_list, fone_list = [], [], [], [], []
 
-    for id, name in id2apk_name.items():
-        id = int(id)
-        apk_name2id[name] = id
+    # 需要查看recommend_list是否在pos_list中
+    acc_list = accuracy_list(recommend_list=recommend_list, pos_list=pos_list)
 
-    return apk_name2id
+    # 需要根据acc_list计算metric
+    for k in k_max:
+        precision_list += [precision_at_k(acc_list, k)]
+        mrr_list += [mrr_at_k(acc_list, k)]
+        recall_list += [recall_at_k(acc_list, len(pos_list), k)]
+        map_list += [average_precision(acc_list, k)]
+        fone_list += [f_one_score(precision_at_k(acc_list, k), recall_at_k(acc_list, k, len(pos_list)))]
 
-def get_test_apk_info():
-    apk_info_list = {}
-    with open(file='metadata/config/testing_0_removed_num_1.json', mode='r') as fp:
-        for info in fp.readlines():
-            obj = json.loads(info.strip('\n'))
-            val = {}
-            val['removed_tpls'] = obj['removed_tpl_list']
-            val['tpl_list'] = obj['tpl_list']
-            apk_info_list[obj['app_id']] = val
-    return apk_info_list
+    return {'precision': np.array(precision_list), 'mrr': np.array(mrr_list), 'recall': np.array(recall_list),
+            'map': np.array(map_list), 'fone': np.array(fone_list)}
 
-def generate_test_json():
-    lib_name2id = create_libname2id()
-    apk_name2id = create_apk_name2id()
-    test_apk_info = get_test_apk_info()
 
-    with open(file='metadata/output/test_wide_deep_change(1).json', mode='w') as w_fp:
-        for apk_name, id in tqdm(apk_name2id.items()):
-            write_dict = {}
-            recommend_list = []
-            with open(file=parser.recommendation_path + apk_name + '.txt', mode='r') as fp:
-                for lib in fp.readlines():
-                    lib = lib.strip('\n').replace('#DEP#', '')
-                    lib_name = lib.split('\t')[0]
-                    lib_id = lib_name2id[lib_name]
-                    recommend_list.append(lib_id)
+def save_recommend_and_result(base_output_path: str, dataset_name: str, training_dataset: str) -> None:
+    lib_name2id = create_libname2id(args.config_path)
+    apk_name2id = create_apk_name2id(training_dataset, dataset_name)
+    test_apk_info = get_test_apk_info(training_dataset + '/' + dataset_name)
 
-            write_dict['app_id'] = id
-            write_dict['recommended_tpl'] = recommend_list
-            write_dict['removed_tpls'] = test_apk_info[id]['removed_tpls']
-            write_str = json.dumps(obj=write_dict) + '\n'
-            w_fp.write(write_str)
+    result = {'precision': np.zeros(2), 'recall': np.zeros(2), 'map': np.zeros(2),
+              'fone': np.zeros(2), 'mrr': np.zeros(2)}
+    app_num = len(apk_name2id)
+
+    testing_output_path = '%s/%s/test_%s.json' % (base_output_path, dataset_name, dataset_name)
+    result_output_path = '%s/%s/result.csv' % (base_output_path, dataset_name)
+    recommend_path = '%s%s/%s' % (training_dataset, dataset_name, args.recommendation_path)
+
+    if not os.path.exists('%s/%s' % (base_output_path, dataset_name)):
+        os.mkdir('%s/%s' % (base_output_path, dataset_name))
+
+    w_recom_fp = open(file=testing_output_path, mode='w')
+    w_res_fp = open(file=result_output_path, mode='w')
+
+    validation_bar = tqdm(desc='the validation process...', total=len(apk_name2id), leave=True)
+
+    for apk_name, id in apk_name2id.items():
+        write_dict = {}
+        recommend_list = []
+
+        with open(file=f'{recommend_path}/{apk_name}.txt', mode='r') as fp:
+            for lib in fp.readlines():
+                lib = lib.strip('\n').replace('#DEP#', '')
+                lib_name = lib.split('\t')[0]
+                lib_id = lib_name2id[lib_name]
+                recommend_list += [lib_id]
+
+        # 这里找完了所有的推荐的lib, 需要计算metric
+        res = test_one_app(recommend_list, test_apk_info[id]['removed_tpls'], k_max=[5, 10])
+        result['precision'] += (res['precision'] / app_num)
+        result['recall'] += (res['recall'] / app_num)
+        result['map'] += (res['map'] / app_num)
+        result['fone'] += (res['fone'] / app_num)
+        result['mrr'] += (res['mrr'] / app_num)
+
+        write_dict['app_id'] = id
+        write_dict['recommended_tpl'] = recommend_list
+        write_dict['removed_tpls'] = test_apk_info[id]['removed_tpls']
+        write_str = json.dumps(obj=write_dict) + '\n'
+        w_recom_fp.write(write_str)
+        validation_bar.update()
+    w_recom_fp.close()
+    validation_bar.close()
+
+    pref_res = '%s\n%s\n%s\n%s\n%s\n' % (
+        ','.join(['%.5f' % i for i in result['recall']]),
+        ','.join(['%.5f' % i for i in result['precision']]),
+        ','.join(['%.5f' % i for i in result['map']]),
+        ','.join(['%.5f' % i for i in result['mrr']]),
+        ','.join(['%.5f' % i for i in result['fone']]),
+    )
+    w_res_fp.write(pref_res)
+    w_res_fp.close()
