@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Sequence
+from typing import Sequence
 
 
 def accuracy_list(recommend_list: Sequence[int], pos_list: Sequence[int]) -> Sequence[int]:
@@ -12,12 +12,13 @@ def accuracy_list(recommend_list: Sequence[int], pos_list: Sequence[int]) -> Seq
     return acc
 
 
-def precision_at_k(acc_list: Sequence[int], k: int):
+def precision_at_k(acc_list: Sequence[int], k: int) -> float:
     acc = np.array(acc_list)[:k]
     return np.mean(acc)
 
 
 def mrr_at_k(acc_list: Sequence[int], k: int) -> float:
+    # 这有点问题
     r = acc_list[:k]
     res = 0.
     for i in range(k):
@@ -27,7 +28,7 @@ def mrr_at_k(acc_list: Sequence[int], k: int) -> float:
     return res
 
 
-def recall_at_k(acc_list: Sequence[int], ground_truth_len: int, k:int):
+def recall_at_k(acc_list: Sequence[int], ground_truth_len: int, k: int) -> float:
     r = np.asfarray(acc_list)[:k]
     return np.sum(r) / ground_truth_len
 
@@ -46,19 +47,3 @@ def f_one_score(precision_at_k_score: float, recall_at_k_score: float) -> float:
     else:
         return 0.
 
-
-def test_one_app(recommend_list: Sequence[int], pos_list: Sequence[int], k_max: Sequence[int]) -> Dict:
-    precision_list, mrr_list, recall_list, map_list, fone_list = [], [], [], [], []
-    # 该怎么进行
-    # 需要查看recommend_list是否在pos_list中
-    acc_list = accuracy_list(recommend_list=recommend_list, pos_list=pos_list)
-    # 需要根据acc_list计算metric
-    for k in k_max:
-        precision_list += [precision_at_k(acc_list, k)]
-        mrr_list += [mrr_at_k(acc_list, k)]
-        recall_list += [recall_at_k(acc_list, len(pos_list), k)]
-        map_list += [average_precision(recommend_list, k)]
-        fone_list += [f_one_score(precision_at_k(acc_list, k), recall_at_k(acc_list, k, len(pos_list)))]
-
-    return {'precision': np.array(precision_list), 'mrr': np.array(mrr_list), 'recall': recall_list,
-            'map': np.array(map_list), 'fone': np.array(fone_list)}
