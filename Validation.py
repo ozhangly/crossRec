@@ -8,7 +8,8 @@ from typing import Sequence, Dict
 from utility.DataReader import create_libname2id, create_apk_name2id, get_test_apk_info
 
 args = arg_parse()
-
+DONT_EXIST_TPL: int = 800
+ks = [1, 3, 5, 10, 20]
 
 def test_one_app(recommend_list: Sequence[int], pos_list: Sequence[int], k_max: Sequence[int]) -> Dict:
     precision_list, mrr_list, recall_list, map_list, fone_list = [], [], [], [], []
@@ -61,7 +62,7 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
                 recommend_list += [lib_id]
 
         # 这里找完了所有的推荐的lib, 需要计算metric
-        res = test_one_app(recommend_list, test_apk_info[id]['removed_tpls'], k_max=[5, 10])
+        res = test_one_app(recommend_list, test_apk_info[id]['removed_tpls'], k_max=ks)
         result['precision'] += (res['precision'] / app_num)
         result['recall'] += (res['recall'] / app_num)
         result['map'] += (res['map'] / app_num)
@@ -69,7 +70,12 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
         result['mrr'] += (res['mrr'] / app_num)
 
         write_dict['app_id'] = id
-        write_dict['recommended_tpl'] = recommend_list
+        tpl_list = test_apk_info[id]['tpl_list']
+        if len(tpl_list) == 0:
+            write_dict['recommend_tpls'] = [DONT_EXIST_TPL] * max(ks)
+        else:
+            write_dict['recommend_tpls'] = recommend_list
+        write_dict['tpl_list'] = test_apk_info[id]['tpl_list']
         write_dict['removed_tpls'] = test_apk_info[id]['removed_tpls']
         write_str = json.dumps(obj=write_dict) + '\n'
         w_recom_fp.write(write_str)
