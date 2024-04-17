@@ -154,6 +154,7 @@ def create_test_file(train_dataset):
                 test_pro = test_pro.strip('\n')
                 test_pro_obj = json.loads(test_pro)
                 test_apk_id  = str(test_pro_obj['app_id'])
+
                 test_apk_name = apk_info[test_apk_id]
                 test_project_info[test_apk_id] = test_apk_name
 
