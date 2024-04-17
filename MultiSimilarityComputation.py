@@ -48,7 +48,10 @@ def compute_one_train_sim(one_train_param):
         scalar += (vector1[i] * vector2[i])
         norm1 += (vector1[i] * vector1[i])
         norm2 += (vector2[i] * vector2[i])
-    val = scalar / math.sqrt(norm1 * norm2)
+    if norm1 * norm2 == 0:
+        val = 0
+    else:
+        val = scalar / math.sqrt(norm1 * norm2)
     return train_key, val
 
 
@@ -144,7 +147,7 @@ def cos_similarity(train_dataset):
         param_dict = {'test_libs': test_libs, 'train_dataset': train_dataset,
                       'combined_dictionary': combined_dictionary, 'lib_weight': lib_weight}
         multi_input = [(key, val, param_dict) for key, val in train_projects.items()]
-        pool = Pool(int(cpu_count() // 2))
+        pool = Pool(int(cpu_count() // 2.0))
 
         sim_list = pool.map(compute_one_train_sim, multi_input)
         pool.close()
