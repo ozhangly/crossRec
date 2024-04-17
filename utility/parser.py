@@ -4,7 +4,7 @@ import argparse
 def arg_parse():
     parser = argparse.ArgumentParser(description='crossRec run config')
 
-    parser.add_argument('--dataset', nargs='?', default='CF_4_5')
+    parser.add_argument('--dataset', nargs='?', default='CF_0_1')
 
     parser.add_argument('--config_path', nargs='?', default='metadata/config')
 
@@ -22,7 +22,7 @@ def arg_parse():
 
     parser.add_argument('--numofneighbours', nargs='?', default=10, type=int)
 
-    parser.add_argument('--recommend_top_n', nargs='?', type=int, default=10)
+    parser.add_argument('--recommend_top_n', nargs='?', type=int, default=20)
 
     parser.add_argument('--remove_n', nargs='?', type=int, default=5)
 
