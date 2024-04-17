@@ -34,8 +34,8 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
     apk_name2id = create_apk_name2id(training_dataset, dataset_name)
     test_apk_info = get_test_apk_info(training_dataset + '/' + dataset_name)
 
-    result = {'precision': np.zeros(2), 'recall': np.zeros(2), 'map': np.zeros(2),
-              'fone': np.zeros(2), 'mrr': np.zeros(2)}
+    result = {'precision': np.zeros(len(ks)), 'recall': np.zeros(len(ks)), 'map': np.zeros(len(ks)),
+              'fone': np.zeros(len(ks)), 'mrr': np.zeros(len(ks))}
     app_num = len(apk_name2id)
 
     testing_output_path = '%s/%s/test_%s.json' % (base_output_path, dataset_name, dataset_name)
@@ -92,3 +92,7 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
     )
     w_res_fp.write(pref_res)
     w_res_fp.close()
+
+
+if __name__ == '__main__':
+    save_recommend_and_result('output', 'CF_0_1', './training dataset/')
