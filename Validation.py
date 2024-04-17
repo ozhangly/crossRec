@@ -1,4 +1,5 @@
 import os
+import re
 import json
 
 from tqdm import tqdm
@@ -38,7 +39,8 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
               'fone': np.zeros(len(ks)), 'mrr': np.zeros(len(ks))}
     app_num = len(apk_name2id)
 
-    testing_output_path = '%s/%s/test_%s.json' % (base_output_path, dataset_name, dataset_name)
+    rmv_fold = re.findall(r'\d+', dataset_name)
+    testing_output_path = '%s/%s/test_crossRec_%s_%s.json' % (base_output_path, dataset_name, rmv_fold[0], rmv_fold[1])
     result_output_path = '%s/%s/result.csv' % (base_output_path, dataset_name)
     recommend_path = '%s%s/%s' % (training_dataset, dataset_name, args.recommendation_path)
 
