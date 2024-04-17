@@ -51,7 +51,7 @@ class Recommendation:
 
                     recommendation[i] = (avg_rating + val2/val1)
 
-            recommendation_result = sorted(recommendation.items(), key=lambda b: b[1], reverse=True)[:10]
+            recommendation_result = sorted(recommendation.items(), key=lambda b: b[1], reverse=True)[:20]
             with open(file=train_dataset + '/' + self.parser.recommendation_path + '/' + test_pro + '.txt', mode='w') as fp:
                 for key, val in recommendation_result:
                     content = lib_set[key] + '\t' + str(val) + '\n'
