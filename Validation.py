@@ -1,3 +1,6 @@
+"""
+三、验证/测试过程
+"""
 import os
 import re
 import json
@@ -56,27 +59,26 @@ def save_recommend_and_result(base_output_path: str, dataset_name: str, training
         write_dict = {}
         recommend_list = []
 
-        with open(file=f'{recommend_path}/{apk_name}.txt', mode='r') as fp:
-            for lib in fp.readlines():
-                lib = lib.strip('\n').replace('#DEP#', '')
-                lib_name = lib.split('\t')[0]
-                lib_id = lib_name2id[lib_name]
-                recommend_list += [lib_id]
+        # 在这就进行判断
+        if len(test_apk_info[id]['tpl_list']) != 0:
+            with open(file=f'{recommend_path}/{apk_name}.txt', mode='r') as fp:
+                for lib in fp.readlines():
+                    lib = lib.strip('\n').replace('#DEP#', '')
+                    lib_name = lib.split('\t')[0]
+                    lib_id = lib_name2id[lib_name]
+                    recommend_list += [lib_id]
 
-        # 这里找完了所有的推荐的lib, 需要计算metric
-        res = test_one_app(recommend_list, test_apk_info[id]['removed_tpls'], k_max=ks)
-        result['precision'] += (res['precision'] / app_num)
-        result['recall'] += (res['recall'] / app_num)
-        result['map'] += (res['map'] / app_num)
-        result['fone'] += (res['fone'] / app_num)
-        result['mrr'] += (res['mrr'] / app_num)
-
-        write_dict['app_id'] = id
-        tpl_list = test_apk_info[id]['tpl_list']
-        if len(tpl_list) == 0:
-            write_dict['recommend_tpls'] = [DONT_EXIST_TPL] * max(ks)
+            # 这里找完了所有的推荐的lib, 需要计算metric
+            res = test_one_app(recommend_list, test_apk_info[id]['removed_tpls'], k_max=ks)
+            result['precision'] += (res['precision'] / app_num)
+            result['recall'] += (res['recall'] / app_num)
+            result['map'] += (res['map'] / app_num)
+            result['fone'] += (res['fone'] / app_num)
+            result['mrr'] += (res['mrr'] / app_num)
         else:
-            write_dict['recommend_tpls'] = recommend_list
+            recommend_list = [DONT_EXIST_TPL] * max(ks)
+
+        write_dict['recommend_tpls'] = recommend_list
         write_dict['tpl_list'] = test_apk_info[id]['tpl_list']
         write_dict['removed_tpls'] = test_apk_info[id]['removed_tpls']
         write_str = json.dumps(obj=write_dict) + '\n'
