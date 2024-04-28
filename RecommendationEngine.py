@@ -17,6 +17,7 @@ class Recommendation:
     def user_based_recommendation(self, train_dataset):
 
         test_projects = read_test_project(train_dataset + '/test_info.json')
+
         test_keys = test_projects.keys()
 
         recom_prog_bar = tqdm(desc='recommend progress',
@@ -24,6 +25,10 @@ class Recommendation:
                               total=len(test_keys))
 
         for test_key in test_keys:
+
+            if not os.path.exists(train_dataset + '/' + self.parser.dict_path + '/dict__' + test_projects[test_key] + '.txt'):
+                continue
+
             recommendation = dict()
             test_pro = test_projects[test_key]
             lib_set = []
@@ -49,13 +54,17 @@ class Recommendation:
                         temp_rating = temp_rating/N
                         val2 += (user_item_matrix[j][i] - temp_rating) * similarities[j]
 
-                    recommendation[i] = (avg_rating + val2/val1)
+                    if val1 == 0.0:
+                        recommendation[i] = avg_rating
+                    else:
+                        recommendation[i] = (avg_rating + val2/val1)
 
             recommendation_result = sorted(recommendation.items(), key=lambda b: b[1], reverse=True)[:20]
             with open(file=train_dataset + '/' + self.parser.recommendation_path + '/' + test_pro + '.txt', mode='w') as fp:
                 for key, val in recommendation_result:
                     content = lib_set[key] + '\t' + str(val) + '\n'
                     fp.write(content)
+            del user_item_matrix, similarities
             recom_prog_bar.update()
 
         recom_prog_bar.close()
@@ -65,14 +74,7 @@ class Recommendation:
 
         # positive libs
         test_libs = get_train_libraries(train_dataset + '/' + self.parser.dict_path + '/dict__' + file_name + '.txt')
-
-        # sim_projects: dict: key:int, val:str
-        # all_neighbours: dict: key: int, val: list
-        # libraries: set
-        # sim_projects, all_neighbours, libraries = get_similarity_projects(train_dataset + '/' + self.parser.similarities_path+ '/' + file_name + '.txt',
-        #                                                                   self.recommend_top_n, self.parser)
-        # 因为不能确定返回的一定就是num of neighbours的project的lib，所以这个很难加进去
-        sim_projects, all_neighbours, libraries = get_similarity_projects(train_dataset, file_name, self.parser)
+        sim_projects, all_neighbours, libraries = get_similarity_projects(train_dataset, file_name, self.parser, test_libs)
 
         self.num_neighbours = len(sim_projects)
         self.parser.numofneighbours = self.num_neighbours
@@ -98,14 +100,15 @@ class Recommendation:
                 else:
                     user_item_matrix[i][j] = 0.
 
-        # tmp_libs = all_neighbours[self.num_neighbours]
+        # for j in range(self.num_cols):
+        #     user_item_matrix[self.num_neighbours][j] = -1.0
+        tmp_libs = all_neighbours[self.num_neighbours]
         for j in range(self.num_cols):
-            user_item_matrix[self.num_neighbours][j] = -1.0
-            # str = lib_set[j]
-            # if str in tmp_libs:
-            #     user_item_matrix[self.num_neighbours][j] = 1.0
-            # else:
-            #     user_item_matrix[self.num_neighbours][j] = -1.0
+            str = lib_set[j]
+            if str in tmp_libs:
+                user_item_matrix[self.num_neighbours][j] = 1.0
+            else:
+                user_item_matrix[self.num_neighbours][j] = -1.0
 
         return user_item_matrix
 
