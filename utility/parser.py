@@ -20,7 +20,7 @@ def arg_parse():
 
     parser.add_argument('--recommendation_path', nargs='?', default='recommendation')
 
-    parser.add_argument('--numofneighbours', nargs='?', default=10, type=int)
+    parser.add_argument('--numofneighbours', nargs='?', default=20, type=int)
 
     parser.add_argument('--recommend_top_n', nargs='?', type=int, default=20)
 

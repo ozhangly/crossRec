@@ -151,7 +151,7 @@ def get_most_similarity_projects(file_name, size):
     return project
 
 
-def get_similarity_projects(train_dataset, file_name, args):
+def get_similarity_projects(train_dataset, file_name, args, test_libs):
     libraries = set()
     project = dict()
     all_neighbours = dict()
@@ -168,11 +168,19 @@ def get_similarity_projects(train_dataset, file_name, args):
             all_neighbours[cnt] = lib
             cnt += 1
             libraries = libraries | lib
-            # 首先还是先拿到num of neighbours的project
-            if cnt >= args.numofneighbours:
-                # 防止libraries不够top_n的情况
-                if len(libraries) >= top_n:
-                    break
+
+            # 应该一直找，一直找到len(libraries - test_libs) > 20个这样才行
+            if len(libraries - test_libs) >= top_n:
+                break
+
+            # 这种思路是错误的，可能会出现推荐不够20的情况
+            #*******************************************************
+            # # 首先还是先拿到num of neighbours的project
+            # if cnt >= args.numofneighbours:
+            #     # 防止libraries不够top_n的情况
+            #     if len(libraries) >= top_n:
+            #         break
+            # *******************************************************
 
     return project, all_neighbours, libraries
 
