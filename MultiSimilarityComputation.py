@@ -1,5 +1,7 @@
-# 试一试多进程能快一点吗，或者内存会不会爆炸
+# 试一试多进程能快一点吗
+# 确实能快一点
 import math
+import os.path
 
 from tqdm import tqdm
 from utility.Graph import Graph
@@ -95,6 +97,13 @@ def cos_similarity(train_dataset):
                         leave=True,
                         total=len(test_keys))
     for test_key in test_keys:  # test_key: str
+
+        # 这里的test_key是test_info中的，是所有的test，但是由于讨论len(tpl_list)为0的情况，没有创建len(tpl_list) == 0的dict文件，所以在这里会报错
+        # 判断一下
+        # 这种情况就是当len(tpl_list) == 0的情况时，不计算相似度
+        if not os.path.exists(train_dataset + '/' + parser.dict_path + '/dict__' + test_projects[test_key] + '.txt'):
+            continue
+
         all_libs = set()
         all_libs = all_libs | all_train_libs
         combined_graph = Graph(graph=graph)
