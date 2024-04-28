@@ -44,7 +44,7 @@ def get_apk_lib_info(train_dataset):
     # 需要创建一个dict，为apk和lib的调用关系
     apk_lib_info = {}
     test_apk_lib_info = {}
-    # 先把test的写进去   , 这都什么逻辑啊啊啊啊啊
+
     for file in os.listdir(train_dataset):
         if 'testing' in file:
             test_file_name = file
@@ -165,8 +165,6 @@ def create_test_file(train_dataset):
 
 
 def create_train_file(train_dataset):
-    # 按道理来说，这样创建train_file是不正确的, 重新创建一下
-    # 就算apk_lib_info 那里没问题，但是在这里根据apk_lib_info创建train是绝对有问题的
     print('creating train file...')
     start_time = time()
     if not os.path.exists(train_dataset + '/train_info.json'):
@@ -192,7 +190,9 @@ def create_train_file(train_dataset):
 def scan_folder(train_dataset):
     base_path = train_dataset + '/'
     if not os.path.exists(args.config_path):
-        os.mkdir(args.config_path)
+        os.makedirs(args.config_path)
+    if not os.path.exists(args.output_path):
+        os.mkdir(args.output_path)
     if not os.path.exists(base_path + args.dict_path):
         os.mkdir(base_path + args.dict_path)
     if not os.path.exists(base_path + args.graph_path):
@@ -207,9 +207,10 @@ def scan_folder(train_dataset):
 
 def create_data(train_dataset):
     scan_folder(train_dataset)
+
     create_apk_info()
     create_lib_info()
-    # 需要在以下步骤中加上进度条
+
     create_dict_file(train_dataset)          # 这个就要求在数据集中创建了
     create_graph_file(train_dataset)
     create_test_file(train_dataset)
